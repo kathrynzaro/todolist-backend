@@ -2,6 +2,7 @@ const pool = require('../lib/utils/pool');
 const setup = require('../data/setup');
 const request = require('supertest');
 const app = require('../lib/app');
+const UserService = require('../lib/services/UserService');
 
 const mockUser = {
   firstName: 'Jack',
@@ -52,9 +53,9 @@ describe('user routes', () => {
 
   it('#GET /me should return the currently logged in user', async () => {
     const [agent, user] = await registerAndLogin();
-    const resp = await agent.get('/api/v1/users/me');
-    expect(resp.status).toBe(200);
-    expect(resp.body).toEqual({
+    const res = await agent.get('/api/v1/users/me');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
       ...user,
       exp: expect.any(Number),
       iat: expect.any(Number),
@@ -62,8 +63,18 @@ describe('user routes', () => {
   });
 
   it('#GET /me should return a 401 if not logged in', async () => {
-    const resp = await request(app).get('/api/v1/users/me');
-    expect(resp.status).toBe(401);
+    const res = await request(app).get('/api/v1/users/me');
+    expect(res.status).toBe(401);
+  });
+
+  it('#POST /sessions should sign in existing user', async () => {
+    await UserService.create(mockUser);
+    const { email, password } = mockUser;
+
+    const res = await request(app)
+      .post('/api/v1/users/sessions')
+      .send({ email, password });
+    expect(res.status).toBe(200);
   });
 
   it('#DELETE /api/v1/users/sessions should logout a user', async () => {
