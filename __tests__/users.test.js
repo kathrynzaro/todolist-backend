@@ -11,6 +11,7 @@ const mockUser = {
 };
 
 const registerAndLogin = async (userProps = {}) => {
+  // eslint-disable-next-line no-unused-vars
   const password = userProps.password ?? mockUser.password;
 
   // Create an "agent" that gives us the ability
@@ -49,7 +50,7 @@ describe('user routes', () => {
     });
   });
 
-  it('GET /me should return the currently logged in user', async () => {
+  it('#GET /me should return the currently logged in user', async () => {
     const [agent, user] = await registerAndLogin();
     const resp = await agent.get('/api/v1/users/me');
     expect(resp.status).toBe(200);
@@ -60,8 +61,16 @@ describe('user routes', () => {
     });
   });
 
-  it('GET /me should return a 401 if not logged in', async () => {
+  it('#GET /me should return a 401 if not logged in', async () => {
     const resp = await request(app).get('/api/v1/users/me');
     expect(resp.status).toBe(401);
+  });
+
+  it('#DELETE /api/v1/users/sessions should logout a user', async () => {
+    const [agent] = await registerAndLogin();
+    const deleteRes = await agent.delete('/api/v1/users/sessions');
+    expect(deleteRes.status).toBe(204);
+    const res = await agent.get('/api/v1/users/me');
+    expect(res.status).toBe(401);
   });
 });
