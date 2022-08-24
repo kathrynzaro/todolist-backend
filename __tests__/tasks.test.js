@@ -36,7 +36,7 @@ describe('items', () => {
     pool.end();
   });
 
-  it('#POST /api/v1/task creates a new task', async () => {
+  it('#POST /api/v1/tasks creates a new task', async () => {
     const [agent, user] = await registerAndLogin();
     const task = { description: 'vacuum' };
     const res = await agent.post('/api/v1/tasks').send(task);
@@ -44,6 +44,22 @@ describe('items', () => {
     expect(res.body).toEqual({
       id: expect.any(String),
       description: task.description,
+      user_id: user.id,
+      complete: false,
+    });
+  });
+
+  it('#GET/api/v1/tasks lists all tasks for authenticated user', async () => {
+    const [agent, user] = await registerAndLogin();
+    const task = { description: 'sweep' };
+    const res = await agent.post('/api/v1/tasks').send(task);
+    expect(res.status).toBe(200);
+
+    const resp = await agent.get('/api/v1/tasks');
+    expect(resp.body.length).toBe(1);
+    expect(resp.body[0]).toEqual({
+      id: expect.any(String),
+      description: 'sweep',
       user_id: user.id,
       complete: false,
     });
