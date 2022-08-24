@@ -109,4 +109,19 @@ describe('tasks', () => {
       .send({ complete: true });
     expect(resp.status).toBe(401);
   });
+
+  it('#DELETE /api/v1/tasks/:id user can delete a task', async () => {
+    const task = { description: 'laundry' };
+    const agent = request.agent(app);
+    await agent.post('/api/v1/users').send(mockUser);
+
+    const response = await agent.post('/api/v1/tasks').send(task);
+    expect(response.status).toBe(200);
+
+    const res = await agent.delete('/api/v1/tasks/1');
+    expect(res.status).toBe(200);
+
+    const resp = await agent.get('/api/v1/tasks/1');
+    expect(resp.status).toBe(404);
+  });
 });
