@@ -3,7 +3,7 @@ const setup = require('../data/setup');
 const request = require('supertest');
 const app = require('../lib/app');
 const UserService = require('../lib/services/UserService');
-const Task = require('../lib/models/Task');
+// const Task = require('../lib/models/Task');
 
 const mockUser = {
   firstName: 'Test',
@@ -28,7 +28,7 @@ const registerAndLogin = async (userProps = {}) => {
   return [agent, user];
 };
 
-describe('items', () => {
+describe('tasks', () => {
   beforeEach(() => {
     return setup(pool);
   });
@@ -63,5 +63,50 @@ describe('items', () => {
       user_id: user.id,
       complete: false,
     });
+  });
+
+  it('#PUT /api/v1/tasks/:id allows an auth user to complete a task', async () => {
+    const [agent, user] = await registerAndLogin();
+    const task = { description: 'sweep' };
+    const res = await agent.post('/api/v1/tasks').send(task);
+    expect(res.status).toBe(200);
+
+    const resp = await agent.put('/api/v1/tasks/1').send({ complete: true });
+    expect(resp.status).toBe(200);
+    expect(resp.body).toEqual({
+      id: expect.any(String),
+      description: 'sweep',
+      user_id: user.id,
+      complete: true,
+    });
+  });
+
+  it('#PUT /api/v1/tasks/:id returns a 403 if unauthorized user', async () => {
+    const testUser = {
+      firstName: 'Test',
+      lastName: 'User',
+      email: 'mock@example.com',
+      password: '123456',
+    };
+
+    const agent = request.agent(app);
+    await agent.post('/api/v1/users').send(mockUser);
+
+    const task = { description: 'sweep' };
+    const res = await agent.post('/api/v1/tasks').send(task);
+    expect(res.status).toBe(200);
+
+    const newAgent = request.agent(app);
+    await newAgent.post('/api/v1/users').send(testUser);
+
+    const resp = await newAgent.put('/api/v1/tasks/1').send({ complete: true });
+    expect(resp.status).toBe(403);
+  });
+
+  it('#PUT /api/v1/tasks/:id returns a 401 if user is not logged in', async () => {
+    const resp = await request(app)
+      .put('/api/v1/tasks/1')
+      .send({ complete: true });
+    expect(resp.status).toBe(401);
   });
 });
