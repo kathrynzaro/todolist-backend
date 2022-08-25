@@ -49,6 +49,13 @@ describe('tasks', () => {
     });
   });
 
+  it('#POST /api/v1/tasks should return a 401 if not authenticated', async () => {
+    const agent = request.agent(app);
+    const task = { description: 'vacuum' };
+    const res = await agent.post('/api/v1/tasks').send(task);
+    expect(res.status).toBe(401);
+  });
+
   it('#GET/api/v1/tasks lists all tasks for authenticated user', async () => {
     const [agent, user] = await registerAndLogin();
     const task = { description: 'sweep' };
@@ -63,6 +70,12 @@ describe('tasks', () => {
       user_id: user.id,
       complete: false,
     });
+  });
+
+  it('#GET /api/v1/tasks should return a 401 if not authenticated', async () => {
+    const agent = request.agent(app);
+    const res = await agent.get('/api/v1/tasks');
+    expect(res.status).toBe(401);
   });
 
   it('#PUT /api/v1/tasks/:id allows an auth user to complete a task', async () => {
@@ -123,5 +136,27 @@ describe('tasks', () => {
 
     const resp = await agent.get('/api/v1/tasks/1');
     expect(resp.status).toBe(404);
+  });
+
+  it('#DELETE /api/v1/tasks/:id returns a 403 if unauthorized user', async () => {
+    const testUser = {
+      firstName: 'Test',
+      lastName: 'User',
+      email: 'mock@example.com',
+      password: '123456',
+    };
+
+    const agent = request.agent(app);
+    await agent.post('/api/v1/users').send(mockUser);
+
+    const task = { description: 'sweep' };
+    const res = await agent.post('/api/v1/tasks').send(task);
+    expect(res.status).toBe(200);
+
+    const newAgent = request.agent(app);
+    await newAgent.post('/api/v1/users').send(testUser);
+
+    const resp = await newAgent.delete('/api/v1/tasks/1');
+    expect(resp.status).toBe(403);
   });
 });
